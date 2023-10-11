@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.github.todolist.user.models.User;
 import com.github.todolist.user.repositories.IUserRepository;
 
+import at.favre.lib.crypto.bcrypt.BCrypt;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -26,6 +28,9 @@ public class UserController {
         if (user != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already taken.");
         }
+
+        String hash = BCrypt.withDefaults().hashToString(12, newUser.getPassword().toCharArray());
+        newUser.setPassword(hash);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(this.userRepository.save(newUser));
     }
