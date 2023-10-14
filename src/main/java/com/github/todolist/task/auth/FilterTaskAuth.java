@@ -26,28 +26,36 @@ public class FilterTaskAuth extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        var authorization = request.getHeader("Authorization");
-        String base64EncodedAuth = authorization.substring(6);
-        byte[] decodedAuth = Base64.getDecoder().decode((base64EncodedAuth));
-        String strAuth = new String(decodedAuth);
-        String[] credentials = strAuth.split(":");
-        String username = credentials[0];
-        String password = credentials[1];
+        var servletPath = request.getServletPath();
 
-        User user = this.userRepository.findByUsername(username);
+        if (servletPath.startsWith("/api/tasks")) {
 
-        if (user == null) {
+            var authorization = request.getHeader("Authorization");
+            String base64EncodedAuth = authorization.substring(6);
+            byte[] decodedAuth = Base64.getDecoder().decode((base64EncodedAuth));
+            String strAuth = new String(decodedAuth);
+            String[] credentials = strAuth.split(":");
+            String username = credentials[0];
+            String password = credentials[1];
+
+            User user = this.userRepository.findByUsername(username);
+
+            if (user == null) {
+                response.sendError(401);
+                return;
+            }
+
+            var verifyer = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword());
+
+            if (verifyer.verified) {
+                request.setAttribute("userId", user.getId());
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             response.sendError(401);
-            return;
-        }
-
-        var verifyer = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword());
-
-        if (verifyer.verified) {
+        } else {
             filterChain.doFilter(request, response);
-            return;
         }
-
-        response.sendError(401);
     }
 }
