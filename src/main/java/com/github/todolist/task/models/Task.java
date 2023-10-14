@@ -38,4 +38,13 @@ public class Task {
     private LocalDateTime createdAt;
 
     private UUID userId;
+
+    public void setTitle(String title) throws Exception {
+
+        if (title.length() > 50) {
+            throw new Exception("The title must be less than or equal to 50 (fifty) characters.");
+        }
+
+        this.title = title;
+    }
 }
